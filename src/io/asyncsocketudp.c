@@ -494,10 +494,33 @@ static void setup_setup(MVMThreadContext *tc, uv_loop_t *loop, MVMObject *async_
     uv_udp_t *udp_handle = MVM_malloc(sizeof(uv_udp_t));
     int r;
     if ((r = uv_udp_init(loop, udp_handle)) >= 0) {
-        if (ssi->bind_addr)
+
+        /* Flag 2 == multicast, handle this differently */
+        if (ssi->bind_addr && r >= 0 && (ssi->flags & 2)) {
+
+            /* Get the name of address; Currently only supports IPv4 */
+            char * addr_str = (char*)malloc(sizeof(char) * 128);
+            uv_ip4_name((const struct sockaddr_in*) ssi->bind_addr, addr_str, 127);
+
+            /* Get the port.  This needs to be improved, as it assumes endianness */
+            unsigned int bigendian = ((const struct sockaddr_in*)ssi->bind_addr)->sin_port;
+            unsigned int smallendian = ((bigendian & 0xff00) >> 8) + ((bigendian & 0x00ff) << 8);
+
+            /* Bind to all interfaces on the specified via our dummy port */
+            struct sockaddr_in dummy;
+            uv_ip4_addr("0.0.0.0",smallendian,&dummy);
+            r = uv_udp_bind(udp_handle, (const struct sockaddr*) &dummy, UV_UDP_REUSEADDR);
+            if(r >= 0) {
+                r = uv_udp_set_membership(udp_handle,addr_str,NULL,UV_JOIN_GROUP);
+            }
+        }
+        /* Unicast or broadcast */
+        else if(ssi->bind_addr) {
             r = uv_udp_bind(udp_handle, ssi->bind_addr, 0);
-        if (r >= 0 && (ssi->flags & 1))
-            r = uv_udp_set_broadcast(udp_handle, 1);
+            /* Broadcast */
+            if (r >= 0 && (ssi->flags & 1))
+                uv_udp_set_broadcast(udp_handle, 1);
+        }
     }
 
     if (r >= 0) {
