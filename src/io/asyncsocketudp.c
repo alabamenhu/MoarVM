@@ -581,7 +581,7 @@ MVMObject * MVM_io_socket_udp_async(MVMThreadContext *tc, MVMObject *queue,
     MVMAsyncTask    *task;
     SocketSetupInfo *ssi;
     struct sockaddr *bind_addr = NULL;
-    char            *host_addr;
+    char            *host_addr = NULL;
 
     /* Validate REPRs. */
     if (REPR(queue)->ID != MVM_REPR_ID_ConcBlockingQueue)
