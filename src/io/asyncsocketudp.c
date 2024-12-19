@@ -484,6 +484,7 @@ static const MVMIOOps op_table = {
 /* Info we convey about a socket setup task. */
 typedef struct {
     struct sockaddr  *bind_addr;
+    char             *host_addr;
     MVMint64          flags;
 } SocketSetupInfo;
 
@@ -494,32 +495,21 @@ static void setup_setup(MVMThreadContext *tc, uv_loop_t *loop, MVMObject *async_
     uv_udp_t *udp_handle = MVM_malloc(sizeof(uv_udp_t));
     int r;
     if ((r = uv_udp_init(loop, udp_handle)) >= 0) {
-
-        /* Flag 2 == multicast, handle this differently */
-        if (ssi->bind_addr && r >= 0 && (ssi->flags & 2)) {
-
-            /* Get the name of address; Currently only supports IPv4 */
-            char * addr_str = (char*)malloc(sizeof(char) * 128);
-            uv_ip4_name((const struct sockaddr_in*) ssi->bind_addr, addr_str, 127);
-
-            /* Get the port.  This needs to be improved, as it assumes endianness */
-            unsigned int bigendian = ((const struct sockaddr_in*)ssi->bind_addr)->sin_port;
-            unsigned int smallendian = ((bigendian & 0xff00) >> 8) + ((bigendian & 0x00ff) << 8);
-
-            /* Bind to all interfaces on the specified via our dummy port */
-            struct sockaddr_in dummy;
-            uv_ip4_addr("0.0.0.0",smallendian,&dummy);
-            r = uv_udp_bind(udp_handle, (const struct sockaddr*) &dummy, UV_UDP_REUSEADDR);
-            if(r >= 0) {
-                r = uv_udp_set_membership(udp_handle,addr_str,NULL,UV_JOIN_GROUP);
-            }
-        }
-        /* Unicast or broadcast */
-        else if(ssi->bind_addr) {
-            r = uv_udp_bind(udp_handle, ssi->bind_addr, 0);
-            /* Broadcast */
-            if (r >= 0 && (ssi->flags & 1))
-                uv_udp_set_broadcast(udp_handle, 1);
+        if (ssi->bind_addr)
+            r = uv_udp_bind(udp_handle, ssi->bind_addr, (ssi->flags & 0b10) ? UV_UDP_REUSEADDR : 0);
+        switch (ssi->flags & 0b11) {
+            case 0: /* Unicast */
+                break;
+            case 1: /* Broadcast */
+                if (r >= 0)
+                    r = uv_udp_set_broadcast(udp_handle, 1);
+                break;
+            case 2: /* Multicast */
+            	if (r >= 0)
+                    r = uv_udp_set_membership(udp_handle, ssi->host_addr, NULL, UV_JOIN_GROUP);
+                break;
+            default: /* Bad flag */
+                r = UV_EINVAL;
         }
     }
 
@@ -568,6 +558,8 @@ static void setup_gc_free(MVMThreadContext *tc, MVMObject *t, void *data) {
         SocketSetupInfo *ssi = (SocketSetupInfo *)data;
         if (ssi->bind_addr)
             MVM_free(ssi->bind_addr);
+        if (ssi->host_addr)
+            MVM_free(ssi->host_addr);
         MVM_free(ssi);
     }
 }
@@ -589,6 +581,7 @@ MVMObject * MVM_io_socket_udp_async(MVMThreadContext *tc, MVMObject *queue,
     MVMAsyncTask    *task;
     SocketSetupInfo *ssi;
     struct sockaddr *bind_addr = NULL;
+    char            *host_addr;
 
     /* Validate REPRs. */
     if (REPR(queue)->ID != MVM_REPR_ID_ConcBlockingQueue)
@@ -602,6 +595,24 @@ MVMObject * MVM_io_socket_udp_async(MVMThreadContext *tc, MVMObject *queue,
     if (host && IS_CONCRETE(host)) {
         MVMROOT3(tc, queue, schedulee, async_type) {
             bind_addr = MVM_io_resolve_host_name(tc, host, port, MVM_SOCKET_FAMILY_UNSPEC, MVM_SOCKET_TYPE_DGRAM, MVM_SOCKET_PROTOCOL_ANY, 1);
+            /* Multicast requires special handling */
+            if ((flags & 0b11) == 2) {
+                /* Get the host address, can't just use "localhost" or other resolvables
+                 * This address needs to be in string format to be passed to the
+                 * multicast membership function during setup. */
+                host_addr = (char*) MVM_calloc(1, sizeof(char) * UV_MAXHOSTNAMESIZE);
+            	uv_ip_name((const struct sockaddr*) bind_addr, host_addr, UV_MAXHOSTNAMESIZE - 1);
+                MVM_free(bind_addr);
+
+                /* Cheap check if IPv6; either way, bind to all local addresses */
+                if (strchr(host_addr,'.') == NULL) {
+                    bind_addr = MVM_calloc(1, sizeof(struct sockaddr_in6));
+                    uv_ip6_addr("::",port,(struct sockaddr_in6*) bind_addr);
+                } else {
+                    bind_addr = MVM_calloc(1, sizeof(struct sockaddr_in));
+                    uv_ip4_addr("0.0.0.0",port,(struct sockaddr_in*) bind_addr);
+                }
+            }
         }
     }
 
@@ -615,6 +626,7 @@ MVMObject * MVM_io_socket_udp_async(MVMThreadContext *tc, MVMObject *queue,
     ssi             = MVM_calloc(1, sizeof(SocketSetupInfo));
     ssi->bind_addr  = bind_addr;
     ssi->flags      = flags;
+    ssi->host_addr  = host_addr;
     task->body.data = ssi;
 
     /* Hand the task off to the event loop. */
