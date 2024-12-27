@@ -493,11 +493,65 @@ static void setup_setup(MVMThreadContext *tc, uv_loop_t *loop, MVMObject *async_
     SocketSetupInfo *ssi = (SocketSetupInfo *)data;
     uv_udp_t *udp_handle = MVM_malloc(sizeof(uv_udp_t));
     int r;
+	// The following are needed only for IPv6 multicast handling;
+	char * intf_addr_str = NULL;
+	struct sockaddr_storage * intf_addr_bin = NULL;
+    int len = 0;
+    int idx2iid = 0;
+
     if ((r = uv_udp_init(loop, udp_handle)) >= 0) {
         if (ssi->bind_addr)
+<<<<<<< Updated upstream
             r = uv_udp_bind(udp_handle, ssi->bind_addr, 0);
         if (r >= 0 && (ssi->flags & 1))
             r = uv_udp_set_broadcast(udp_handle, 1);
+=======
+            r = uv_udp_bind(udp_handle, ssi->bind_addr, (ssi->flags & 0b10) ? UV_UDP_REUSEADDR : 0);
+        switch (ssi->flags & 0b11) {
+            case 0: /* Unicast */
+                break;
+            case 1: /* Broadcast */
+                if (r >= 0)
+                    r = uv_udp_set_broadcast(udp_handle, 1);
+                break;
+            case 2: /* Multicast */
+            	printf("Setting multicast // to %s\n", ssi->host_addr);
+				// Format will be '::%ID'; +4 accounts for ::% and null terminator
+                intf_addr_str = MVM_calloc(1, sizeof(char) * (UV_IF_NAMESIZE + 4));
+                intf_addr_bin = MVM_calloc(1, sizeof(struct sockaddr_storage));
+                len = sizeof(struct sockaddr_storage);
+                printf("  size of storage is %d\n",len);
+                r = uv_udp_getsockname(udp_handle, (struct sockaddr *) intf_addr_bin, &len);
+                printf("Got socket name\n");
+                printf("  %d chars added\n",len);
+                printf("  result   = %d\n", r);
+                printf("  ip       = %04x::%04x\n",
+                    (int) ((struct sockaddr_in6*) intf_addr_bin)->sin6_addr.s6_addr[0],
+                    (int) ((struct sockaddr_in6*) intf_addr_bin)->sin6_addr.s6_addr[15]) ;
+                strncpy(intf_addr_str, (char*) intf_addr_bin, UV_IF_NAMESIZE);
+                intf_addr_str[UV_IF_NAMESIZE] = '\0';
+                printf("  data: *%s*\n",intf_addr_str);
+                len = UV_IF_NAMESIZE;
+                //strcpy(intf_addr_str, "::%");
+                printf("Max length of name is %d\n", len);
+                r = uv_if_indextoiid(
+                    ((struct sockaddr_in6*) intf_addr_bin)->sin6_scope_id,
+                    intf_addr_str,
+                    (unsigned long *) &len);
+                printf("Characters added were %d, result was %d\n", len, r);
+				//printf("Result of getsockname (scope id): %d", intf_addr.sin6_scope_id);
+            	if (r >= 0) {
+					printf("Adding membership, scope %s\n", intf_addr_str);
+                    r = uv_udp_set_membership(udp_handle, ssi->host_addr, intf_addr_str, UV_JOIN_GROUP);
+					printf("Result of set_membership: %d", r);
+                }
+                MVM_free(intf_addr_str);
+                MVM_free(intf_addr_bin);
+                break;
+            default: /* Bad flag */
+                r = UV_EINVAL;
+        }
+>>>>>>> Stashed changes
     }
 
     if (r >= 0) {
@@ -562,10 +616,26 @@ static const MVMAsyncTaskOps setup_op_table = {
 MVMObject * MVM_io_socket_udp_async(MVMThreadContext *tc, MVMObject *queue,
                                     MVMObject *schedulee, MVMString *host,
                                     MVMint64 port, MVMint64 flags,
-                                    MVMObject *async_type) {
+                                    MVMString *ssm_host, MVMObject *async_type) {
     MVMAsyncTask    *task;
     SocketSetupInfo *ssi;
     struct sockaddr *bind_addr = NULL;
+<<<<<<< Updated upstream
+=======
+    char            *host_addr = NULL;
+    char            *host_cstr = NULL;
+    char * util = MVM_calloc(1, sizeof(char) * 128);
+    int util_i = 0;
+    uv_interface_address_t *iface_addrs = NULL;
+    int iface_cnt = 0;
+    int i;
+    struct sockaddr_in6 *iface = NULL;
+    struct sockaddr_in6 addr6;
+
+    char * ssm = MVM_string_utf8_encode_C_string(tc, host);
+    printf("SSM Host: %s\n", ssm);
+    MVM_free(ssm);
+>>>>>>> Stashed changes
 
     /* Validate REPRs. */
     if (REPR(queue)->ID != MVM_REPR_ID_ConcBlockingQueue)
@@ -575,10 +645,64 @@ MVMObject * MVM_io_socket_udp_async(MVMThreadContext *tc, MVMObject *queue,
         MVM_exception_throw_adhoc(tc,
             "asyncudp result type must have REPR AsyncTask");
 
+    i = uv_ip6_addr("::", 0, &addr6);
+    printf("Result of ip6 addr for :: %d\n", i);
+    printf("  Interface though: %d\n", addr6.sin6_scope_id);
+
+    uv_interface_addresses(&iface_addrs,&iface_cnt);
+    for(int i = 0; i < iface_cnt; i++) {
+        printf("Interface %d - %s ", i, iface_addrs[i].name);
+        iface = &iface_addrs[i].address.address6;
+        if(iface->sin6_family != AF_INET6) {
+            printf("(IPv4)\n");
+        }else{
+            printf("(IPv6)\n");
+            printf("  iface: %d\n", (int) iface->sin6_scope_id);
+            printf("  phys: %d:%d:%d:%d:%d:%d\n",
+                (unsigned int) iface->sin6_addr.s6_addr[0],
+                (unsigned int) iface->sin6_addr.s6_addr[1],
+                (unsigned int) iface->sin6_addr.s6_addr[2],
+                (unsigned int) iface->sin6_addr.s6_addr[3],
+                (unsigned int) iface->sin6_addr.s6_addr[4],
+                (unsigned int) iface->sin6_addr.s6_addr[5]
+            );
+            }
+
+        printf("  intl: %d\n", iface_addrs[i].is_internal);
+    }
+    uv_free_interface_addresses(iface_addrs,iface_cnt);
+
     /* Resolve hostname. (Could be done asynchronously too.) */
     if (host && IS_CONCRETE(host)) {
         MVMROOT3(tc, queue, schedulee, async_type) {
             bind_addr = MVM_io_resolve_host_name(tc, host, port, MVM_SOCKET_FAMILY_UNSPEC, MVM_SOCKET_TYPE_DGRAM, MVM_SOCKET_PROTOCOL_ANY, 1);
+<<<<<<< Updated upstream
+=======
+            /* Multicast requires special handling */
+            if ((flags & 0b11) == 2) {
+                /* Get the host address, can't just use "localhost" or other resolvables
+                 * This address needs to be in string format to be passed to the
+                 * multicast membership function during setup. */
+                host_addr = (char*) MVM_calloc(1, sizeof(char) * UV_MAXHOSTNAMESIZE);
+            	uv_ip_name((const struct sockaddr*) bind_addr, host_addr, UV_MAXHOSTNAMESIZE - 1);
+                printf("Initial interface %d\n", ((struct sockaddr_in6 *) bind_addr)->sin6_scope_id);
+                util_i = 64;
+                uv_if_indextoiid(0, util, (size_t*) &util_i);
+                printf("The index id that was retrieved is %s\n", util);
+                MVM_free(bind_addr);
+
+                /* Cheap check if IPv6; either way, bind to all local addresses */
+                /* The resolve host might go to IPv4 even though IPv6 is specified. */
+                host_cstr = MVM_string_utf8_encode_C_string(tc,host);
+                if (strchr(host_addr,'.') == NULL || strchr(host_cstr,':') != NULL) {
+                    bind_addr = MVM_calloc(1, sizeof(struct sockaddr_in6));
+                    uv_ip6_addr("::",port,(struct sockaddr_in6*) bind_addr);
+                } else {
+                    bind_addr = MVM_calloc(1, sizeof(struct sockaddr_in));
+                    uv_ip4_addr("0.0.0.0",port,(struct sockaddr_in*) bind_addr);
+                }
+            }
+>>>>>>> Stashed changes
         }
     }
 
