@@ -635,6 +635,9 @@ MVMObject * MVM_io_socket_udp_async(MVMThreadContext *tc, MVMObject *queue,
     char * ssm = MVM_string_utf8_encode_C_string(tc, host);
     printf("SSM Host: %s\n", ssm);
     MVM_free(ssm);
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 
     /* Validate REPRs. */
