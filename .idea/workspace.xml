@@ -17,9 +17,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="3784147c-e073-4e37-88c7-4d23f20f47b9" name="Changes" comment="">
+<<<<<<< Updated upstream
       <change afterPath="$PROJECT_DIR$/.idea/comma.xml" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+=======
+>>>>>>> Stashed changes
       <change beforePath="$PROJECT_DIR$/build/Makefile.in" beforeDir="false" afterPath="$PROJECT_DIR$/build/Makefile.in" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/core/interp.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/core/interp.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/core/oplist" beforeDir="false" afterPath="$PROJECT_DIR$/src/core/oplist" afterDir="false" />
@@ -51,6 +54,7 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
+<<<<<<< Updated upstream
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "RunOnceActivity.RadMigrateCodeStyle": "true",
@@ -70,6 +74,27 @@
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
+=======
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.RadMigrateCodeStyle&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.readMode.enableVisualFormatting&quot;: &quot;true&quot;,
+    &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
+    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/guifa/Applications/GitHub/MoarVM&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+>>>>>>> Stashed changes
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
@@ -87,7 +112,11 @@
       <workItem from="1735164849763" duration="5069000" />
       <workItem from="1735176258835" duration="6379000" />
       <workItem from="1735186704641" duration="11285000" />
+<<<<<<< Updated upstream
       <workItem from="1735272889515" duration="5062000" />
+=======
+      <workItem from="1735272889515" duration="4465000" />
+>>>>>>> Stashed changes
     </task>
     <servers />
   </component>

@@ -501,11 +501,9 @@ static void setup_setup(MVMThreadContext *tc, uv_loop_t *loop, MVMObject *async_
 
     if ((r = uv_udp_init(loop, udp_handle)) >= 0) {
         if (ssi->bind_addr)
-<<<<<<< Updated upstream
             r = uv_udp_bind(udp_handle, ssi->bind_addr, 0);
         if (r >= 0 && (ssi->flags & 1))
             r = uv_udp_set_broadcast(udp_handle, 1);
-=======
             r = uv_udp_bind(udp_handle, ssi->bind_addr, (ssi->flags & 0b10) ? UV_UDP_REUSEADDR : 0);
         switch (ssi->flags & 0b11) {
             case 0: /* Unicast */
@@ -620,8 +618,6 @@ MVMObject * MVM_io_socket_udp_async(MVMThreadContext *tc, MVMObject *queue,
     MVMAsyncTask    *task;
     SocketSetupInfo *ssi;
     struct sockaddr *bind_addr = NULL;
-<<<<<<< Updated upstream
-=======
     char            *host_addr = NULL;
     char            *host_cstr = NULL;
     char * util = MVM_calloc(1, sizeof(char) * 128);
@@ -635,10 +631,6 @@ MVMObject * MVM_io_socket_udp_async(MVMThreadContext *tc, MVMObject *queue,
     char * ssm = MVM_string_utf8_encode_C_string(tc, host);
     printf("SSM Host: %s\n", ssm);
     MVM_free(ssm);
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 
     /* Validate REPRs. */
     if (REPR(queue)->ID != MVM_REPR_ID_ConcBlockingQueue)
@@ -679,8 +671,6 @@ MVMObject * MVM_io_socket_udp_async(MVMThreadContext *tc, MVMObject *queue,
     if (host && IS_CONCRETE(host)) {
         MVMROOT3(tc, queue, schedulee, async_type) {
             bind_addr = MVM_io_resolve_host_name(tc, host, port, MVM_SOCKET_FAMILY_UNSPEC, MVM_SOCKET_TYPE_DGRAM, MVM_SOCKET_PROTOCOL_ANY, 1);
-<<<<<<< Updated upstream
-=======
             /* Multicast requires special handling */
             if ((flags & 0b11) == 2) {
                 /* Get the host address, can't just use "localhost" or other resolvables
@@ -705,7 +695,6 @@ MVMObject * MVM_io_socket_udp_async(MVMThreadContext *tc, MVMObject *queue,
                     uv_ip4_addr("0.0.0.0",port,(struct sockaddr_in*) bind_addr);
                 }
             }
->>>>>>> Stashed changes
         }
     }
 
