@@ -755,7 +755,7 @@ multidimref_i       w(obj) r(obj) r(obj) :pure :useshll
 multidimref_n       w(obj) r(obj) r(obj) :pure :useshll
 multidimref_s       w(obj) r(obj) r(obj) :pure :useshll
 fileno_fh           w(int64) r(obj) :pure
-asyncudp            w(obj) r(obj) r(obj) r(str) r(int64) r(int64) r(obj)
+asyncudp            w(obj) r(obj) r(obj) r(str) r(int64) r(int64) r(str) r(obj)
 bindpos2d_u         r(obj) r(int64) r(int64) r(uint64) :specializable
 asyncwritebytesto   w(obj) r(obj) r(obj) r(obj) r(obj) r(obj) r(str) r(int64)
 objprimbits         w(int64) r(obj) :specializable

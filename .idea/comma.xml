@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Raku.Project.Details">
+    <option name="doesProjectContainRakuCode" value="true" />
+  </component>
+  <component name="Raku.SDK">
+    <option name="projectSdkPath" value="/Applications/rakudo/bin" />
+    <option name="projectSdkVersion" value="v2024.12.12.g.3.efc.376.a.5" />
+  </component>
+</project>

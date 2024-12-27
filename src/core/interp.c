@@ -4693,8 +4693,8 @@ void MVM_interp_run(MVMThreadContext *tc, void (*initial_invoke)(MVMThreadContex
                 GET_REG(cur_op, 0).o = MVM_io_socket_udp_async(tc,
                     GET_REG(cur_op, 2).o, GET_REG(cur_op, 4).o, GET_REG(cur_op, 6).s,
                     GET_REG(cur_op, 8).i64, GET_REG(cur_op, 10).i64,
-                    GET_REG(cur_op, 12).o);
-                cur_op += 14;
+                    GET_REG(cur_op, 12).s, GET_REG(cur_op, 14).o);
+                cur_op += 16;
                 goto NEXT;
             OP(asyncwritebytesto):
                 GET_REG(cur_op, 0).o = MVM_io_write_bytes_to_async(tc, GET_REG(cur_op, 2).o,
