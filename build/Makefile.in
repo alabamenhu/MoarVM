@@ -465,6 +465,7 @@ HEADERS = src/moar.h \
 UV_UNIX = 3rdparty/libuv/src/strscpy@obj@ \
           3rdparty/libuv/src/strtok@obj@ \
           3rdparty/libuv/src/fs-poll@obj@ \
+          3rdparty/libuv/src/idna@obj@ \
           3rdparty/libuv/src/inet@obj@ \
           3rdparty/libuv/src/uv-common@obj@ \
           3rdparty/libuv/src/version@obj@ \
@@ -517,6 +518,7 @@ UV_DARWIN = 3rdparty/libuv/src/unix/darwin@obj@ \
             3rdparty/libuv/src/unix/fsevents@obj@ \
             3rdparty/libuv/src/unix/kqueue@obj@ \
             3rdparty/libuv/src/unix/proctitle@obj@ \
+            3rdparty/libuv/src/unix/bsd-ifaddrs@obj@ \
             $(UV_UNIX)
 
 UV_SOLARIS = 3rdparty/libuv/src/unix/sunos@obj@ \
