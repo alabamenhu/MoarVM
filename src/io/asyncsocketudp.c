@@ -484,6 +484,7 @@ static const MVMIOOps op_table = {
 /* Info we convey about a socket setup task. */
 typedef struct {
     struct sockaddr  *bind_addr;
+    char             *host_addr;
     MVMint64          flags;
 } SocketSetupInfo;
 
@@ -504,9 +505,21 @@ static void setup_setup(MVMThreadContext *tc, uv_loop_t *loop, MVMObject *async_
     int r;
     if ((r = uv_udp_init(loop, udp_handle)) >= 0) {
         if (ssi->bind_addr)
-            r = uv_udp_bind(udp_handle, ssi->bind_addr, 0);
-        if (r >= 0 && (ssi->flags & 1))
-            r = uv_udp_set_broadcast(udp_handle, 1);
+            r = uv_udp_bind(udp_handle, ssi->bind_addr, (ssi->flags & 0b10) ? UV_UDP_REUSEADDR : 0);
+        switch (ssi->flags & 0b11) {
+            case 0: /* Unicast */
+                break;
+            case 1: /* Broadcast */
+                if (r >= 0)
+                    r = uv_udp_set_broadcast(udp_handle, 1);
+                break;
+            case 2: /* Multicast */
+            	if (r >= 0)
+                    r = uv_udp_set_membership(udp_handle, ssi->host_addr, NULL, UV_JOIN_GROUP);
+                break;
+            default: /* Bad flag */
+                r = UV_EINVAL;
+        }
     }
 
     if (r >= 0) {
@@ -654,6 +667,8 @@ static void setup_gc_free(MVMThreadContext *tc, MVMObject *t, void *data) {
         SocketSetupInfo *ssi = (SocketSetupInfo *)data;
         if (ssi->bind_addr)
             MVM_free(ssi->bind_addr);
+        if (ssi->host_addr)
+            MVM_free(ssi->host_addr);
         MVM_free(ssi);
     }
 }
@@ -711,11 +726,7 @@ MVMObject * MVM_io_socket_udp_async(MVMThreadContext *tc, MVMObject *queue,
     /* Resolve hostname. (Could be done asynchronously too.) */
     if (mc_host && IS_CONCRETE(mc_host)) {
         MVMROOT3(tc, queue, schedulee, async_type) {
-<<<<<<< Updated upstream
-            bind_addr = MVM_io_resolve_host_name(tc, host, port, MVM_SOCKET_FAMILY_UNSPEC, MVM_SOCKET_TYPE_DGRAM, MVM_SOCKET_PROTOCOL_ANY, 1);
-=======
             bind_addr = MVM_io_resolve_host_name(tc, mc_host, port, MVM_SOCKET_FAMILY_UNSPEC, MVM_SOCKET_TYPE_DGRAM, MVM_SOCKET_PROTOCOL_ANY, 1);
->>>>>>> Stashed changes
         }
     }
 
@@ -814,3 +825,4 @@ MVMObject * MVM_io_socket_udp_async_multicast(MVMThreadContext *tc, MVMObject *q
 
     return (MVMObject *)task;
 }
+
